@@ -4,7 +4,7 @@ using System.Linq;
 using System.Collections.Generic;
 
 namespace Core {
-    class Edge {
+    public class Edge {
         protected Vertex _to;
         protected int _weight;
         
@@ -34,7 +34,7 @@ namespace Core {
         }
     }
 
-    class Vertex {
+    public class Vertex {
         protected int _id;
         protected List<Edge> _edges;
 
@@ -72,5 +72,9 @@ namespace Core {
             }
             return writer.ToString();
         }
+    }
+
+    public class GraphModel {
+        protected List<Vertex> _vertexes;
     }
 }
