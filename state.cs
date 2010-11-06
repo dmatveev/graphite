@@ -23,4 +23,13 @@ namespace Graphite.Editor.States {
             _document.CreateVertex ();
         }
     }
+
+    public class Idle: State, IState {
+        public Idle (Graphite.Core.IDocument doc) : base (doc) {
+        }
+
+        public void ProcessClick () {
+            _document.SelectVertex ();
+        }
+    }
 }

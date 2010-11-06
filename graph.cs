@@ -3,7 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Collections.Generic;
 
-namespace Core {
+namespace Graphite.Core {
     public class Edge {
         protected Vertex _to;
         protected int _weight;
