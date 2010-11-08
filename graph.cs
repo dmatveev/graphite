@@ -44,9 +44,8 @@ namespace Graphite.Core {
         }
 
         public void Connect (Vertex v, int weight = 0) {
-            if (!Connected (v)) {
+            if (!Connected (v))
                 _edges.Add (new Edge (v, weight));
-            }
         }
 
         public bool Connected (Vertex v) {
@@ -67,9 +66,9 @@ namespace Graphite.Core {
             StringWriter writer = new StringWriter ();
             writer.Write ("Vertex #{0}: ", v._id);
 
-            foreach (Edge each in v._edges) {
+            foreach (Edge each in v._edges)
                 writer.Write ("{0} ", (string) each);
-            }
+
             return writer.ToString();
         }
     }

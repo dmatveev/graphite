@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using System.Collections.Generic;
+using System.Linq;
 using System.ComponentModel;
 using System.Windows.Forms;
 
@@ -47,6 +48,27 @@ namespace Graphite.Scene.Elements {
             return false;
         }
     }
+
+    public class LazyEdge: Edge {
+        protected Core.Vertex _domainVertex;
+
+        public LazyEdge (Visuals.Vertex first, Core.Vertex second) : base (first, null) {
+            _domainVertex = second;
+        }
+
+        public void Complete (Visuals.Vertex second) {
+            _second = second;
+        }
+
+        public bool Matches (Core.Vertex known, Visuals.Vertex unknown) {
+            return First.IsAssignedTo (known) && unknown.IsAssignedTo (_domainVertex);
+        }
+
+        public static implicit operator string (LazyEdge le) {
+            return String.Format ("LazyEdge 1st: {0}, 2nd: {1}, domain: {2}",
+                                  (string) le.First, (string) le.Second, le._domainVertex);
+        }
+    }
 }
 
 namespace Widgets {
@@ -58,12 +80,39 @@ namespace Widgets {
             DoubleBuffered = true;
         }
 
+        public Visuals.Vertex SelectedVertex {
+            get {
+                foreach (Graphite.Scene.Elements.Vertex v in _vertexVisuals)
+                    if (v.Selected)
+                        return v;
+
+                return null;
+            }
+        }
+
         protected override void OnPaint (PaintEventArgs e) {
             base.OnPaint(e);
 
+            var edges = new List<Graphite.Scene.Elements.LazyEdge>();
             foreach (Graphite.Scene.Elements.Vertex visual in _vertexVisuals) {
-                visual.Paint (e.Graphics);
+                foreach (Graphite.Core.Edge edge in visual.Connections ()) {
+                    Graphite.Scene.Elements.LazyEdge lazyEdge = null;
+
+                    if (edges.Any (x => x.Matches (edge.To, visual))) {
+                        lazyEdge = edges.First (x => x.Matches (edge.To, visual));
+                        lazyEdge.Complete (visual);
+                    }
+                    else {
+                        lazyEdge = new Graphite.Scene.Elements.LazyEdge (visual, edge.To);
+                        edges.Add (lazyEdge);
+                    }
+                }
             }
+            foreach (Graphite.Scene.Elements.LazyEdge edge in edges)
+                edge.Paint (e.Graphics);
+            
+            foreach (Graphite.Scene.Elements.Vertex visual in _vertexVisuals)
+                visual.Paint (e.Graphics);
         } 
 
         public void AddVertex (Graphite.Core.Vertex v, Point pos) {
@@ -73,15 +122,14 @@ namespace Widgets {
 
         public void TrySelectVertex (Point pos) {
             bool found = false;
-            foreach (Graphite.Scene.Elements.Vertex visual in _vertexVisuals) {
+            foreach (Graphite.Scene.Elements.Vertex visual in _vertexVisuals)
                 if (!found && visual.IsUnder (pos)) {
                     visual.Selected = true;
                     found = true;
                 }
-                else {
+                else
                     visual.Selected = false;
-                }
-            }
+            
             Refresh ();
         }
     }

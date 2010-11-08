@@ -19,6 +19,22 @@ namespace Visuals {
                 return _position;
             }
         }
+
+        public void Connect (Visuals.Vertex v, int weight = 0) {
+            _vertex.Connect (v._vertex, weight);
+        }
+
+        public bool IsAssignedTo (Graphite.Core.Vertex v) {
+            return _vertex == v;
+        }
+
+        public Graphite.Core.Edge[] Connections () {
+            return _vertex.Edges ();
+        }
+        
+        public static implicit operator string (Vertex v) {
+            return String.Format ("Vertex {0} at {1}", v, v.Position);
+        }
     }
 
     public class Edge {
