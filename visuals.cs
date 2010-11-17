@@ -5,7 +5,7 @@ using System.Collections.Generic;
 namespace Visuals {
     public class Vertex {
         protected Graphite.Core.Vertex _vertex;
-        public Point Position {get; protected set;}
+        public Point Position;
         protected const int radius = 10;
         protected const int border = 2;
         

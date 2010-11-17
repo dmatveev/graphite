@@ -29,7 +29,10 @@ namespace Windows {
             Controls.Add (_scene);
             ResumeLayout (false);
 
-            _scene.Click += new EventHandler (Clicked);
+            _scene.Click     += new EventHandler      (OnClick);
+            _scene.MouseMove += new MouseEventHandler (OnMouseMove);
+            _scene.MouseDown += new MouseEventHandler (OnMouseDown);
+            _scene.MouseUp   += new MouseEventHandler (OnMouseUp);
         }
 
         private void CreateToolbar () {
@@ -51,8 +54,20 @@ namespace Windows {
             Controls.Add (_toolbar);
         }
 
-        public void Clicked (object obj, EventArgs args) {
+        public void OnClick (object obj, EventArgs args) {
             _state.ProcessClick ();
+        }
+
+        public void OnMouseMove (object obj, EventArgs args) {
+            _state.ProcessMouseMove ();
+        }
+
+        public void OnMouseDown (object obj, EventArgs args) {
+            _state.ProcessMouseDown ();
+        }
+
+        public void OnMouseUp (object obj, EventArgs args) {
+            _state.ProcessMouseUp ();
         }
 
         public void CreateVertex () {
@@ -74,6 +89,13 @@ namespace Windows {
         public void ConnectVertexes (Visuals.Vertex a, Visuals.Vertex b) {
             a.Connect (b);
             b.Connect (a);
+            _scene.Refresh ();
+        }
+
+        public void MoveVertex (Visuals.Vertex v) {
+            Point screen = System.Windows.Forms.Cursor.Position;
+            Point client = _scene.PointToClient (screen);
+            v.Position = client;
             _scene.Refresh ();
         }
 
