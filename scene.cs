@@ -18,8 +18,8 @@ namespace Graphite.Scene.Elements {
         }
 
         public void Paint (Graphics g) {
-            int x = _position.X;
-            int y = _position.Y;
+            int x = Position.X;
+            int y = Position.Y;
             Rectangle rect = new Rectangle (x - radius,
                                             y - radius,
                                             2 * radius,
@@ -57,7 +57,7 @@ namespace Graphite.Scene.Elements {
         }
 
         public void Complete (Visuals.Vertex second) {
-            _second = second;
+            Second = second;
         }
 
         public bool Matches (Core.Vertex known, Visuals.Vertex unknown) {
