@@ -36,6 +36,28 @@ namespace Graphite.Editor.States {
         }
     }
 
+    public class Deleting: State, IState {
+        public Deleting (Graphite.Core.IDocument doc) : base (doc) {
+        }
+
+        public void ProcessClick () {
+            _document.SelectVertex ();
+
+            Visuals.Vertex v = _document.SelectedVertex ();
+            if (v != null)
+                _document.DeleteVertex (v);
+        }
+
+        public void ProcessMouseDown () {
+        }
+
+        public void ProcessMouseMove () {
+        }
+
+        public void ProcessMouseUp () {
+        }
+    }
+
     public class Idle: State, IState {
         protected bool _pressed;
         protected Visuals.Vertex _draggedVertex;

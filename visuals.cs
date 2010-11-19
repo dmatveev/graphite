@@ -4,26 +4,26 @@ using System.Collections.Generic;
 
 namespace Visuals {
     public class Vertex {
-        protected Graphite.Core.Vertex _vertex;
+        public Graphite.Core.Vertex DomainVertex {get; protected set;}
         public Point Position;
         protected const int radius = 10;
         protected const int border = 2;
         
         public Vertex (Graphite.Core.Vertex vertex, Point pos) {
-            _vertex = vertex;
+            DomainVertex = vertex;
             Position = pos;
         }
 
         public void Connect (Visuals.Vertex v, int weight = 0) {
-            _vertex.Connect (v._vertex, weight);
+            DomainVertex.Connect (v.DomainVertex, weight);
         }
 
         public bool IsAssignedTo (Graphite.Core.Vertex v) {
-            return _vertex == v;
+            return DomainVertex == v;
         }
 
         public Graphite.Core.Edge[] Connections () {
-            return _vertex.Edges ();
+            return DomainVertex.Edges ();
         }
         
         public static implicit operator string (Vertex v) {

@@ -76,6 +76,10 @@ namespace Windows {
             _scene.AddVertex (new Graphite.Core.Vertex(), client);
         }
 
+        public void DeleteVertex (Visuals.Vertex v) {
+            _scene.DeleteVertex (v);
+        }
+
         public void SelectVertex () {
             Point screen = System.Windows.Forms.Cursor.Position;
             Point client = _scene.PointToClient (screen);
@@ -106,6 +110,9 @@ namespace Windows {
                 break;
             case 1:
                 _state = new Graphite.Editor.States.Connecting (this);
+                break;
+            case 3:
+                _state = new Graphite.Editor.States.Deleting (this);
                 break;
             case 4:
                 _state = new Graphite.Editor.States.Idle (this);

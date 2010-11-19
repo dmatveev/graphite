@@ -120,6 +120,16 @@ namespace Widgets {
             Refresh ();
         }
 
+        public void DeleteVertex (Visuals.Vertex v) {
+            foreach (Graphite.Core.Edge edge in v.Connections ()) {
+                Graphite.Core.Vertex to = edge.To;
+                v.DomainVertex.Disconnect (to);
+                to.Disconnect (v.DomainVertex);
+            }
+            _vertexVisuals.Remove (v as Graphite.Scene.Elements.Vertex);
+            Refresh ();
+        }
+
         public void TrySelectVertex (Point pos) {
             bool found = false;
             foreach (Graphite.Scene.Elements.Vertex visual in _vertexVisuals)

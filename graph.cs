@@ -36,6 +36,11 @@ namespace Graphite.Core {
                 _edges.Add (new Edge (v, weight));
         }
 
+        public void Disconnect (Vertex v) {
+            Edge e = _edges.First (x => x.Connected (v));
+            _edges.Remove (e);
+        }
+
         public bool Connected (Vertex v) {
             return _edges.Any (x => x.Connected (v));
         }
