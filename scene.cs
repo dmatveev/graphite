@@ -45,17 +45,37 @@ namespace Graphite.Math {
 }
 
 namespace Graphite.Scene.Elements {
-    public interface IElement {
-        void Paint   (Graphics g);
-        bool IsUnder (Point pt);
-    }
-
-    public class Vertex: IElement {
-        protected Graphite.Core.Vertex _assignedVertex;
-        public bool Selected { set; get; }
-
+    public class CircleRenderer: Graphite.Core.ShapeRenderer {
         protected const int radius = 10;
         protected const int border = 2;
+
+        public override void Render (object shouldBeVertex, object shouldBeGraphics) {
+            Vertex v = shouldBeVertex as Graphite.Scene.Elements.Vertex;
+            Graphics g = shouldBeGraphics as Graphics;
+
+            int x = v.AssignedTo.Position.X;
+            int y = v.AssignedTo.Position.Y;
+            Rectangle rect = new Rectangle (x - radius,
+                                            y - radius,
+                                            2 * radius,
+                                            2 * radius);
+            Pen blackPen = new Pen (v.Selected ? SystemColors.Highlight : Color.Black, border);
+            g.DrawEllipse (blackPen, rect);
+        }
+
+        public override bool IsUnder (object shouldBeVertex, Point pt) {
+            Vertex v = shouldBeVertex as Graphite.Scene.Elements.Vertex;
+            double x = v.AssignedTo.Position.X;
+            double y = v.AssignedTo.Position.Y;
+            double r = System.Math.Sqrt (System.Math.Pow (x - pt.X, 2) +
+                                         System.Math.Pow (y - pt.Y, 2));
+            return r < radius;
+        }
+    }
+
+    public class Vertex {
+        protected Graphite.Core.Vertex _assignedVertex;
+        public bool Selected { set; get; }
 
         public Vertex (Graphite.Core.Vertex vertex) {
             _assignedVertex = vertex;
@@ -68,26 +88,15 @@ namespace Graphite.Scene.Elements {
         }
 
         public void Paint (Graphics g) {
-            int x = _assignedVertex.Position.X;
-            int y = _assignedVertex.Position.Y;
-            Rectangle rect = new Rectangle (x - radius,
-                                            y - radius,
-                                            2 * radius,
-                                            2 * radius);
-            Pen blackPen = new Pen (Selected ? SystemColors.Highlight : Color.Black, border);
-            g.DrawEllipse (blackPen, rect);
+            _assignedVertex.Renderer.Render (this, g);
         }
 
         public bool IsUnder (Point pt) {
-            double x = _assignedVertex.Position.X;
-            double y = _assignedVertex.Position.Y;
-            double r = System.Math.Sqrt (System.Math.Pow (x - pt.X, 2) +
-                                         System.Math.Pow (y - pt.Y, 2));
-            return r < radius;
+            return _assignedVertex.Renderer.IsUnder (this, pt);
         }
     }
 
-    public class Edge: IElement {
+    public class Edge {
         public bool Selected { set; get; }
 
         protected Graphite.Core.Edge _assignedEdge;

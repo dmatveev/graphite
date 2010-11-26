@@ -8,9 +8,11 @@ namespace Windows {
         protected ToolBar _toolbar;
         protected Widgets.Scene _scene;
         protected Graphite.Editor.States.State _state;
+        protected Graphite.Scene.Elements.CircleRenderer _cr;
 
         public MainWindow () {
             _state = new Graphite.Editor.States.Adding (this);
+            _cr = new Graphite.Scene.Elements.CircleRenderer ();
             InitializeComponent();
         }
 
@@ -73,7 +75,9 @@ namespace Windows {
         public void CreateVertex () {
             Point screen = System.Windows.Forms.Cursor.Position;
             Point client = _scene.PointToClient (screen);
-            _scene.AddVertex (new Graphite.Core.Vertex (0, client));
+            var v = new Graphite.Core.Vertex (0, client);
+            v.Renderer = _cr;
+            _scene.AddVertex (v);
         }
 
         public void DeleteVertex (Graphite.Core.Vertex v) {
