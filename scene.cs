@@ -5,6 +5,45 @@ using System.Linq;
 using System.ComponentModel;
 using System.Windows.Forms;
 
+namespace Graphite.Math {
+    public class Line2D {
+        protected double _k;
+        protected double _b;
+
+        public Line2D (Point a, Point b) {
+            _k = (double) (a.Y - b.Y) / (a.X - b.X);
+            _b = (a.Y - _k * a.X);
+        }
+
+        public double function (double x) {
+            return _k * x + _b;
+        }
+
+        public virtual bool HitTest (Point p, double precision) {
+            return System.Math.Abs (p.Y - function (p.X)) <= precision;
+        }
+    }
+
+    public class LinePiece2D: Line2D {
+        protected double _left;
+        protected double _right;
+
+        public LinePiece2D (Point a, Point b) : base (a, b) {
+            if (a.X <= b.X) {
+                _left = a.X;
+                _right = b.X;
+            } else {
+                _left = b.X;
+                _right = a.X;
+            }
+        }
+
+        public override bool HitTest (Point p, double precision) {
+            return base.HitTest (p, precision) && p.X >= _left && p.X <= _right;
+        }
+    }
+}
+
 namespace Graphite.Scene.Elements {
     public interface IElement {
         void Paint   (Graphics g);
@@ -29,13 +68,15 @@ namespace Graphite.Scene.Elements {
         }
 
         public bool IsUnder (Point pt) {
-            double r = Math.Sqrt (Math.Pow ((double) Position.X - pt.X, 2) +
-                                  Math.Pow ((double) Position.Y - pt.Y, 2));
+            double r = System.Math.Sqrt (System.Math.Pow ((double) Position.X - pt.X, 2) +
+                                         System.Math.Pow ((double) Position.Y - pt.Y, 2));
             return r < radius;
         }
     }
 
     public class Edge: Visuals.Edge, IElement {
+        public bool Selected { set; get; }
+        
         public Edge (Visuals.Vertex first, Visuals.Vertex second) : base (first, second) {
         }
 
@@ -45,7 +86,8 @@ namespace Graphite.Scene.Elements {
         }
 
         public bool IsUnder (Point pt) {
-            return false;
+            var line = new Graphite.Math.LinePiece2D (First.Position, Second.Position);
+            return line.HitTest (pt, 5.0);
         }
     }
 
@@ -74,12 +116,15 @@ namespace Graphite.Scene.Elements {
 namespace Widgets {
     public class Scene: System.Windows.Forms.Control {
         protected List<Graphite.Scene.Elements.Vertex> _vertexVisuals;
+        protected List<Graphite.Scene.Elements.LazyEdge> _edgeVisuals;
 
         public Scene () {
             _vertexVisuals = new List<Graphite.Scene.Elements.Vertex>();
+            _edgeVisuals = new List<Graphite.Scene.Elements.LazyEdge>();
             DoubleBuffered = true;
         }
 
+        // TODO: Refactoring
         public Visuals.Vertex SelectedVertex {
             get {
                 foreach (Graphite.Scene.Elements.Vertex v in _vertexVisuals)
@@ -90,25 +135,21 @@ namespace Widgets {
             }
         }
 
+        // TODO: Refactoring
+        public Visuals.Edge SelectedEdge {
+            get {
+                foreach (Graphite.Scene.Elements.Edge e in _edgeVisuals)
+                    if (e.Selected)
+                        return e;
+
+                return null;
+            }
+        }
+
         protected override void OnPaint (PaintEventArgs e) {
             base.OnPaint(e);
 
-            var edges = new List<Graphite.Scene.Elements.LazyEdge>();
-            foreach (Graphite.Scene.Elements.Vertex visual in _vertexVisuals) {
-                foreach (Graphite.Core.Edge edge in visual.Connections ()) {
-                    Graphite.Scene.Elements.LazyEdge lazyEdge = null;
-
-                    if (edges.Any (x => x.Matches (edge.To, visual))) {
-                        lazyEdge = edges.First (x => x.Matches (edge.To, visual));
-                        lazyEdge.Complete (visual);
-                    }
-                    else {
-                        lazyEdge = new Graphite.Scene.Elements.LazyEdge (visual, edge.To);
-                        edges.Add (lazyEdge);
-                    }
-                }
-            }
-            foreach (Graphite.Scene.Elements.LazyEdge edge in edges)
+            foreach (Graphite.Scene.Elements.LazyEdge edge in _edgeVisuals)
                 edge.Paint (e.Graphics);
             
             foreach (Graphite.Scene.Elements.Vertex visual in _vertexVisuals)
@@ -127,9 +168,11 @@ namespace Widgets {
                 to.Disconnect (v.DomainVertex);
             }
             _vertexVisuals.Remove (v as Graphite.Scene.Elements.Vertex);
+            UpdateEdges ();
             Refresh ();
         }
 
+        // TODO: Refactoring
         public void TrySelectVertex (Point pos) {
             bool found = false;
             foreach (Graphite.Scene.Elements.Vertex visual in _vertexVisuals)
@@ -140,6 +183,53 @@ namespace Widgets {
                 else
                     visual.Selected = false;
             
+            Refresh ();
+        }
+
+        // TODO: Refactoring
+        public void TrySelectEdge (Point pos) {
+            bool found = false;
+            foreach (Graphite.Scene.Elements.Edge visual in _edgeVisuals)
+                if (!found && visual.IsUnder (pos)) {
+                    visual.Selected = true;
+                    found = true;
+                }
+                else
+                    visual.Selected = false;
+            
+            Refresh ();
+        }
+
+        public void ConnectVertexes (Visuals.Vertex a, Visuals.Vertex b) {
+            a.Connect (b);
+            b.Connect (a);
+            UpdateEdges ();
+            Refresh ();
+        }
+
+        protected void UpdateEdges () {
+            _edgeVisuals = new List<Graphite.Scene.Elements.LazyEdge>();
+         
+            foreach (Graphite.Scene.Elements.Vertex visual in _vertexVisuals) {
+                foreach (Graphite.Core.Edge edge in visual.Connections ()) {
+                    Graphite.Scene.Elements.LazyEdge lazyEdge = null;
+
+                    if (_edgeVisuals.Any (x => x.Matches (edge.To, visual))) {
+                        lazyEdge = _edgeVisuals.First (x => x.Matches (edge.To, visual));
+                        lazyEdge.Complete (visual);
+                    }
+                    else {
+                        lazyEdge = new Graphite.Scene.Elements.LazyEdge (visual, edge.To);
+                        _edgeVisuals.Add (lazyEdge);
+                    }
+                }
+            }
+        }
+
+        public void DisconnectVertexes (Visuals.Vertex a, Visuals.Vertex b) {
+            a.Disconnect (b);
+            b.Disconnect (a);
+            UpdateEdges ();
             Refresh ();
         }
     }

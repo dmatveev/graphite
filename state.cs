@@ -46,6 +46,29 @@ namespace Graphite.Editor.States {
             Visuals.Vertex v = _document.SelectedVertex ();
             if (v != null)
                 _document.DeleteVertex (v);
+
+        }
+
+        public void ProcessMouseDown () {
+        }
+
+        public void ProcessMouseMove () {
+        }
+
+        public void ProcessMouseUp () {
+        }
+    }
+
+    public class Disconnecting: State, IState {
+        public Disconnecting (Graphite.Core.IDocument doc) : base (doc) {
+        }
+
+        public void ProcessClick () {
+            _document.SelectEdge ();
+
+            Visuals.Edge e = _document.SelectedEdge ();
+            if (e != null)
+                _document.DisconnectVertexes (e.First, e.Second);
         }
 
         public void ProcessMouseDown () {

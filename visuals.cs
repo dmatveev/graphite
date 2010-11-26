@@ -18,6 +18,10 @@ namespace Visuals {
             DomainVertex.Connect (v.DomainVertex, weight);
         }
 
+        public void Disconnect (Visuals.Vertex v) {
+            DomainVertex.Disconnect (v.DomainVertex);
+        }
+
         public bool IsAssignedTo (Graphite.Core.Vertex v) {
             return DomainVertex == v;
         }

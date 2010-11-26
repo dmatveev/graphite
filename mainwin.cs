@@ -86,14 +86,26 @@ namespace Windows {
             _scene.TrySelectVertex (client);
         }
 
+        public void SelectEdge () {
+            Point screen = System.Windows.Forms.Cursor.Position;
+            Point client = _scene.PointToClient (screen);
+            _scene.TrySelectEdge (client);
+        }
+
         public Visuals.Vertex SelectedVertex () {
             return _scene.SelectedVertex;
         }
 
+        public Visuals.Edge SelectedEdge () {
+            return _scene.SelectedEdge;
+        }
+
         public void ConnectVertexes (Visuals.Vertex a, Visuals.Vertex b) {
-            a.Connect (b);
-            b.Connect (a);
-            _scene.Refresh ();
+            _scene.ConnectVertexes (a, b);
+        }
+
+        public void DisconnectVertexes (Visuals.Vertex a, Visuals.Vertex b) {
+            _scene.DisconnectVertexes (a, b);
         }
 
         public void MoveVertex (Visuals.Vertex v) {
@@ -110,6 +122,9 @@ namespace Windows {
                 break;
             case 1:
                 _state = new Graphite.Editor.States.Connecting (this);
+                break;
+            case 2:
+                _state = new Graphite.Editor.States.Disconnecting (this);
                 break;
             case 3:
                 _state = new Graphite.Editor.States.Deleting (this);
