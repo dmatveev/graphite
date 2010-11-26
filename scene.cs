@@ -87,7 +87,7 @@ namespace Graphite.Scene.Elements {
 
         public bool IsUnder (Point pt) {
             var line = new Graphite.Math.LinePiece2D (First.Position, Second.Position);
-            return line.HitTest (pt, 5.0);
+            return line.HitTest (pt, 7.0);
         }
     }
 

@@ -7,7 +7,7 @@ namespace Windows {
     public class MainWindow: System.Windows.Forms.Form, Graphite.Core.IDocument {
         protected ToolBar _toolbar;
         protected Widgets.Scene _scene;
-        protected Graphite.Editor.States.IState _state;
+        protected Graphite.Editor.States.State _state;
 
         public MainWindow () {
             _state = new Graphite.Editor.States.Adding (this);
