@@ -73,10 +73,10 @@ namespace Windows {
         public void CreateVertex () {
             Point screen = System.Windows.Forms.Cursor.Position;
             Point client = _scene.PointToClient (screen);
-            _scene.AddVertex (new Graphite.Core.Vertex(), client);
+            _scene.AddVertex (new Graphite.Core.Vertex (0, client));
         }
 
-        public void DeleteVertex (Visuals.Vertex v) {
+        public void DeleteVertex (Graphite.Core.Vertex v) {
             _scene.DeleteVertex (v);
         }
 
@@ -92,23 +92,23 @@ namespace Windows {
             _scene.TrySelectEdge (client);
         }
 
-        public Visuals.Vertex SelectedVertex () {
+        public Graphite.Core.Vertex SelectedVertex () {
             return _scene.SelectedVertex;
         }
 
-        public Visuals.Edge SelectedEdge () {
+        public Graphite.Core.Edge SelectedEdge () {
             return _scene.SelectedEdge;
         }
 
-        public void ConnectVertexes (Visuals.Vertex a, Visuals.Vertex b) {
+        public void ConnectVertexes (Graphite.Core.Vertex a, Graphite.Core.Vertex b) {
             _scene.ConnectVertexes (a, b);
         }
 
-        public void DisconnectVertexes (Visuals.Vertex a, Visuals.Vertex b) {
+        public void DisconnectVertexes (Graphite.Core.Vertex a, Graphite.Core.Vertex b) {
             _scene.DisconnectVertexes (a, b);
         }
 
-        public void MoveVertex (Visuals.Vertex v) {
+        public void MoveVertex (Graphite.Core.Vertex v) {
             Point screen = System.Windows.Forms.Cursor.Position;
             Point client = _scene.PointToClient (screen);
             v.Position = client;

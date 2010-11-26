@@ -1,13 +1,13 @@
 namespace Graphite.Core {
     public interface IDocument {
         // TODO: Refactoring
-        Visuals.Edge   SelectedEdge ();
-        Visuals.Vertex SelectedVertex ();
-        void ConnectVertexes    (Visuals.Vertex a, Visuals.Vertex b);
-        void DisconnectVertexes (Visuals.Vertex a, Visuals.Vertex b);
+        Edge   SelectedEdge ();
+        Vertex SelectedVertex ();
+        void ConnectVertexes    (Vertex a, Vertex b);
+        void DisconnectVertexes (Vertex a, Vertex b);
         void CreateVertex ();
-        void DeleteVertex (Visuals.Vertex v);
-        void MoveVertex (Visuals.Vertex v);
+        void DeleteVertex (Vertex v);
+        void MoveVertex (Vertex v);
         void SelectEdge ();
         void SelectVertex ();
     }

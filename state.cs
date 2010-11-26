@@ -39,7 +39,7 @@ namespace Graphite.Editor.States {
         public override void ProcessClick () {
             _document.SelectVertex ();
 
-            Visuals.Vertex v = _document.SelectedVertex ();
+            Graphite.Core.Vertex v = _document.SelectedVertex ();
             if (v != null)
                 _document.DeleteVertex (v);
         }
@@ -52,15 +52,15 @@ namespace Graphite.Editor.States {
         public override void ProcessClick () {
             _document.SelectEdge ();
 
-            Visuals.Edge e = _document.SelectedEdge ();
+            Graphite.Core.Edge e = _document.SelectedEdge ();
             if (e != null)
-                _document.DisconnectVertexes (e.First, e.Second);
+                _document.DisconnectVertexes (e.From, e.To);
         }
     }
 
     public class Idle: State {
         protected bool _pressed;
-        protected Visuals.Vertex _draggedVertex;
+        protected Graphite.Core.Vertex _draggedVertex;
 
         public Idle (Graphite.Core.IDocument doc) : base (doc) {
         }
@@ -85,7 +85,7 @@ namespace Graphite.Editor.States {
     }
 
     public class Connecting: State {
-        protected Visuals.Vertex _fromVertex;
+        protected Graphite.Core.Vertex _fromVertex;
 
         public Connecting (Graphite.Core.IDocument doc) : base (doc) {
         }
@@ -93,7 +93,7 @@ namespace Graphite.Editor.States {
         public override void ProcessClick () {
             _document.SelectVertex ();
             
-            Visuals.Vertex thisVisual;
+            Graphite.Core.Vertex thisVisual;
 
             if ((thisVisual = _document.SelectedVertex()) == null)
                 return;

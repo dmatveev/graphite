@@ -1,20 +1,27 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Drawing;
 using System.Collections.Generic;
 
 namespace Graphite.Core {
     public class Edge {
+        public Vertex From {get; protected set;}
         public Vertex To {get; protected set;}
         public int Weight {get; protected set;}
         
-        public Edge (Vertex to, int weight) {
-            To = to;
+        public Edge (Vertex fromv, Vertex tov, int weight) {
+            From = fromv;
+            To = tov;
             Weight = weight;
         }
 
         public bool Connected (Vertex v) {
             return To == v;
+        }
+
+        public bool Matches (Edge e) {
+            return e.From == this.To && e.To == this.From;
         }
 
         public static implicit operator string (Edge e) {
@@ -24,16 +31,19 @@ namespace Graphite.Core {
 
     public class Vertex {
         public int Id {get; protected set;}
+        public Point Position;
+
         protected List<Edge> _edges;
 
-        public Vertex (int id = 0) {
+        public Vertex (int id, Point pos) {
             Id = id;
+            Position = pos;
             _edges = new List<Edge>();
         }
 
         public void Connect (Vertex v, int weight = 0) {
             if (!Connected (v))
-                _edges.Add (new Edge (v, weight));
+                _edges.Add (new Edge (this, v, weight));
         }
 
         public void Disconnect (Vertex v) {
@@ -58,9 +68,5 @@ namespace Graphite.Core {
 
             return writer.ToString();
         }
-    }
-
-    public class GraphModel {
-        protected List<Vertex> _vertexes;
     }
 }
