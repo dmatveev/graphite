@@ -7,30 +7,30 @@ using Graphite.Editor.States;
 
 namespace Windows {
     public class MainWindow: System.Windows.Forms.Form, Graphite.Core.IDocument {
-        protected ToolStrip _toolStrip;
-        protected Widgets.Scene _scene;
-        protected Graphite.Editor.States.State _state;
-        protected Graphite.Scene.Elements.CircleRenderer _cr;
-        protected ContextMenu _shapesMenu;
+        protected ToolStrip           _toolStrip;
+        protected ToolStripComboBox   _shapeCombo;
+        protected Widgets.Scene       _scene;
+        protected State               _state;
+        protected Graphite.Shapes.Manager _shapeMan;
 
         public MainWindow () {
             _state = new Graphite.Editor.States.Adding (this);
-            _cr = new Graphite.Scene.Elements.CircleRenderer ();
+            _shapeMan = new Graphite.Shapes.Manager ();
             InitializeComponent();
         }
 
         private void CreateScene () {
-            _scene = new Widgets.Scene();
+            _scene  = new Widgets.Scene();
+
             _scene.Location = new System.Drawing.Point (0, 0);
-            _scene.Anchor = (AnchorStyles.Left | AnchorStyles.Right |
-                             AnchorStyles.Top  | AnchorStyles.Bottom);
-            _scene.Size = ClientSize;
+            _scene.Anchor   = (AnchorStyles.Left | AnchorStyles.Right |
+                               AnchorStyles.Top  | AnchorStyles.Bottom);
+            _scene.Size     = ClientSize;
 
-            _scene.Click     += new EventHandler      (OnClick);
-            _scene.MouseMove += new MouseEventHandler (OnMouseMove);
-            _scene.MouseDown += new MouseEventHandler (OnMouseDown);
-            _scene.MouseUp   += new MouseEventHandler (OnMouseUp);
-
+            _scene.Click     += (obj, e) => _state.ProcessClick();
+            _scene.MouseMove += (obj, e) => _state.ProcessMouseMove();
+            _scene.MouseDown += (obj, e) => _state.ProcessMouseDown();
+            _scene.MouseUp   += (obj, e) => _state.ProcessMouseUp();
         }
 
         private void InitializeComponent () {
@@ -42,6 +42,7 @@ namespace Windows {
             SuspendLayout();
             
             CreateToolbarButtons ();
+            CreateShapeSelector ();
             CreateScene ();
             
             Controls.Add (_toolStrip);
@@ -64,7 +65,6 @@ namespace Windows {
         }
 
         private void CreateToolbarButtons () {
-
             _toolStrip.Items.AddRange (new ToolStripItem [] {
                 CreateButton ("Add",        (obj, e) => _state = new Adding (this)),
                 CreateButton ("Connect",    (obj, e) => _state = new Connecting (this)),
@@ -74,27 +74,25 @@ namespace Windows {
             });
         }
 
-        public void OnClick (object obj, EventArgs args) {
-            _state.ProcessClick ();
-        }
+        private void CreateShapeSelector () {
+            _shapeCombo = new ToolStripComboBox ();
+            _shapeCombo.DropDownStyle = ComboBoxStyle.DropDownList;
 
-        public void OnMouseMove (object obj, EventArgs args) {
-            _state.ProcessMouseMove ();
-        }
+            foreach (Graphite.Core.Shape sh in _shapeMan.Shapes)
+                _shapeCombo.Items.Add (sh.name ());
 
-        public void OnMouseDown (object obj, EventArgs args) {
-            _state.ProcessMouseDown ();
-        }
+            _shapeCombo.SelectedIndex = 0;
 
-        public void OnMouseUp (object obj, EventArgs args) {
-            _state.ProcessMouseUp ();
+            _toolStrip.Items.Add (new ToolStripSeparator ());
+            _toolStrip.Items.Add (new ToolStripLabel ("Shape:"));
+            _toolStrip.Items.Add (_shapeCombo);
         }
 
         public void CreateVertex () {
             Point screen = System.Windows.Forms.Cursor.Position;
             Point client = _scene.PointToClient (screen);
             var v = new Graphite.Core.Vertex (0, client);
-            v.Renderer = _cr;
+            v.VertexShape = _shapeMan.Shapes[_shapeCombo.SelectedIndex];
             _scene.AddVertex (v);
         }
 
@@ -136,5 +134,5 @@ namespace Windows {
             v.Position = client;
             _scene.Refresh ();
         }
-   }
+    }
 }

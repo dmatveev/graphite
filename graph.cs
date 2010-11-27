@@ -5,12 +5,14 @@ using System.Drawing;
 using System.Collections.Generic;
 
 namespace Graphite.Core {
-    public abstract class ShapeRenderer {
-        public ShapeRenderer () {
+    public abstract class Shape {
+        public Shape () {
         }
 
         public abstract void Render (object shouldBeVertex, object shouldBeCanvas);
         public abstract bool IsUnder (object shouldBeVertex, Point pt);
+        public abstract string name ();
+        public abstract string alias ();
     }
 
     public class Edge {
@@ -40,7 +42,7 @@ namespace Graphite.Core {
     public class Vertex {
         public int Id {get; protected set;}
         public Point Position;
-        public ShapeRenderer Renderer;
+        public Shape VertexShape;
 
         protected List<Edge> _edges;
 
