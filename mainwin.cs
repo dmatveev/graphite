@@ -1,14 +1,17 @@
 using System;
+using System.Data;
 using System.Drawing;
 using System.ComponentModel;
 using System.Windows.Forms;
+using Graphite.Editor.States;
 
 namespace Windows {
     public class MainWindow: System.Windows.Forms.Form, Graphite.Core.IDocument {
-        protected ToolBar _toolbar;
+        protected ToolStrip _toolStrip;
         protected Widgets.Scene _scene;
         protected Graphite.Editor.States.State _state;
         protected Graphite.Scene.Elements.CircleRenderer _cr;
+        protected ContextMenu _shapesMenu;
 
         public MainWindow () {
             _state = new Graphite.Editor.States.Adding (this);
@@ -16,44 +19,59 @@ namespace Windows {
             InitializeComponent();
         }
 
-        private void InitializeComponent () {
-            SuspendLayout();
-            CreateToolbar ();
-
+        private void CreateScene () {
             _scene = new Widgets.Scene();
             _scene.Location = new System.Drawing.Point (0, 0);
-            _scene.Size = new System.Drawing.Size (640, 480);
             _scene.Anchor = (AnchorStyles.Left | AnchorStyles.Right |
                              AnchorStyles.Top  | AnchorStyles.Bottom);
-
-            Text = "Graphite";
-            ClientSize = new System.Drawing.Size (640, 480);
-            Controls.Add (_scene);
-            ResumeLayout (false);
+            _scene.Size = ClientSize;
 
             _scene.Click     += new EventHandler      (OnClick);
             _scene.MouseMove += new MouseEventHandler (OnMouseMove);
             _scene.MouseDown += new MouseEventHandler (OnMouseDown);
             _scene.MouseUp   += new MouseEventHandler (OnMouseUp);
+
         }
 
-        private void CreateToolbar () {
-            _toolbar = new ToolBar();
-            ToolBarButton addBtn = new ToolBarButton ("Add");
-            ToolBarButton conBtn = new ToolBarButton ("Connect");
-            ToolBarButton disBtn = new ToolBarButton ("Disconnect");
-            ToolBarButton delBtn = new ToolBarButton ("Delete");
-            ToolBarButton selBtn = new ToolBarButton ("Select");
+        private void InitializeComponent () {
+            Text = "Graphite";
+            ClientSize = new Size (640, 480);
 
-            _toolbar.Buttons.Add (addBtn);
-            _toolbar.Buttons.Add (conBtn);
-            _toolbar.Buttons.Add (disBtn);
-            _toolbar.Buttons.Add (delBtn);
-            _toolbar.Buttons.Add (selBtn);
+            _toolStrip = new ToolStrip();
+            _toolStrip.SuspendLayout ();
+            SuspendLayout();
             
-            _toolbar.ButtonClick += new ToolBarButtonClickEventHandler (this.OnCommand);
+            CreateToolbarButtons ();
+            CreateScene ();
             
-            Controls.Add (_toolbar);
+            Controls.Add (_toolStrip);
+            Controls.Add (_scene);
+            
+            _toolStrip.ResumeLayout (false);
+            ResumeLayout (false);
+            PerformLayout ();
+        }
+
+        private ToolStripButton CreateButton (string label, EventHandler e) {
+            var btn = new ToolStripButton ();
+
+            btn.DisplayStyle =  ToolStripItemDisplayStyle.Text;
+			btn.Text         =  label;
+			btn.TextAlign    =  System.Drawing.ContentAlignment.MiddleRight;
+			btn.Click        += e;
+
+            return btn;
+        }
+
+        private void CreateToolbarButtons () {
+
+            _toolStrip.Items.AddRange (new ToolStripItem [] {
+                CreateButton ("Add",        (obj, e) => _state = new Adding (this)),
+                CreateButton ("Connect",    (obj, e) => _state = new Connecting (this)),
+                CreateButton ("Disconnect", (obj, e) => _state = new Disconnecting (this)),
+                CreateButton ("Delete",     (obj, e) => _state = new Deleting (this)),
+                CreateButton ("Select",     (obj, e) => _state = new Idle (this))
+            });
         }
 
         public void OnClick (object obj, EventArgs args) {
@@ -118,25 +136,5 @@ namespace Windows {
             v.Position = client;
             _scene.Refresh ();
         }
-
-        private void OnCommand (Object sender, ToolBarButtonClickEventArgs e) {
-            switch (_toolbar.Buttons.IndexOf (e.Button)) {
-            case 0:
-                _state = new Graphite.Editor.States.Adding (this);
-                break;
-            case 1:
-                _state = new Graphite.Editor.States.Connecting (this);
-                break;
-            case 2:
-                _state = new Graphite.Editor.States.Disconnecting (this);
-                break;
-            case 3:
-                _state = new Graphite.Editor.States.Deleting (this);
-                break;
-            case 4:
-                _state = new Graphite.Editor.States.Idle (this);
-                break;
-            }   
-        }
-    }
+   }
 }
