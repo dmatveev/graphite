@@ -68,7 +68,6 @@ namespace Windows {
         }
 
         private void Save () {
-            System.IO.Stream stream;
             SaveFileDialog   dialog;
 
             dialog = new SaveFileDialog();
@@ -77,7 +76,8 @@ namespace Windows {
             dialog.RestoreDirectory = true;
             
             if (dialog.ShowDialog() == DialogResult.OK) {
-                if ((stream = dialog.OpenFile()) != null) {
+                var stream = new System.IO.FileStream (dialog.FileName, System.IO.FileMode.Create);
+                if (stream != null) {
                     _scene.Save (stream);
                     stream.Close ();
                 }
