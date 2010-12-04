@@ -9,10 +9,10 @@ namespace Graphite.Core {
         public Shape () {
         }
 
-        public abstract void Render (object shouldBeVertex, object shouldBeCanvas);
-        public abstract bool IsUnder (object shouldBeVertex, Point pt);
-        public abstract string name ();
-        public abstract string alias ();
+        public abstract void   Render  (object shouldBeVertex, object shouldBeCanvas);
+        public abstract bool   IsUnder (object shouldBeVertex, Point pt);
+        public abstract string name    ();
+        public abstract string alias   ();
     }
 
     public class Edge {
@@ -36,6 +36,13 @@ namespace Graphite.Core {
 
         public static implicit operator string (Edge e) {
             return String.Format ("#{0}:{1}", e.To.Id, e.Weight);
+        }
+
+        public void Save (System.Xml.XmlWriter w) {
+            w.WriteStartElement ("edge");
+            w.WriteAttributeString ("to", To.Id.ToString());
+            w.WriteAttributeString ("weight", Weight.ToString());
+            w.WriteEndElement ();
         }
     }
 
@@ -78,6 +85,24 @@ namespace Graphite.Core {
                 writer.Write ("{0} ", (string) each);
 
             return writer.ToString();
+        }
+
+        public void Save (System.Xml.XmlWriter w) {
+            w.WriteStartElement ("vertex");
+            w.WriteAttributeString ("id", Id.ToString());
+            w.WriteAttributeString ("shape", VertexShape.alias ());
+
+            /* TODO: Introduce a Position class */ {
+                w.WriteStartElement ("position");
+                w.WriteAttributeString ("x", Position.X.ToString ());
+                w.WriteAttributeString ("y", Position.Y.ToString ());
+                w.WriteEndElement ();
+            }
+            
+            foreach (Edge each in _edges)
+                each.Save (w);
+            
+            w.WriteEndElement ();
         }
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Graphite.Shapes {
     public class Circle: Graphite.Core.Shape {
@@ -123,6 +124,14 @@ namespace Graphite.Shapes {
 
     public class Manager {
         protected List<Graphite.Core.Shape> _shapes;
+        static protected Manager _instance;
+
+        static public Manager instance () {
+            if (_instance == null)
+                _instance = new Manager();
+
+            return _instance;
+        }
 
         public Manager () {
             _shapes = new List<Graphite.Core.Shape> ();
@@ -135,6 +144,10 @@ namespace Graphite.Shapes {
             get {
                 return _shapes.ToArray ();
             }
+        }
+
+        public Graphite.Core.Shape FromAlias (string alias) {
+            return _shapes.First (x => x.alias() == alias);
         }
     }
 }

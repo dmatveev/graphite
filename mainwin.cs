@@ -7,15 +7,18 @@ using Graphite.Editor.States;
 
 namespace Windows {
     public class MainWindow: System.Windows.Forms.Form, Graphite.Core.IDocument {
-        protected ToolStrip           _toolStrip;
-        protected ToolStripComboBox   _shapeCombo;
-        protected Widgets.Scene       _scene;
-        protected State               _state;
+        protected ToolStrip               _toolStrip;
+        protected ToolStripComboBox       _shapeCombo;
+        protected Widgets.Scene           _scene;
+        protected State                   _state;
         protected Graphite.Shapes.Manager _shapeMan;
 
+        protected int                     _counter;
+
         public MainWindow () {
-            _state = new Graphite.Editor.States.Adding (this);
+            _state    = new Graphite.Editor.States.Adding (this);
             _shapeMan = new Graphite.Shapes.Manager ();
+            _counter  = 0;
             InitializeComponent();
         }
 
@@ -64,8 +67,44 @@ namespace Windows {
             return btn;
         }
 
+        private void Save () {
+            System.IO.Stream stream;
+            SaveFileDialog   dialog;
+
+            dialog = new SaveFileDialog();
+            dialog.Filter = "XML files (*.xml)|*.xml";
+            dialog.FilterIndex = 1;
+            dialog.RestoreDirectory = true;
+            
+            if (dialog.ShowDialog() == DialogResult.OK) {
+                if ((stream = dialog.OpenFile()) != null) {
+                    _scene.Save (stream);
+                    stream.Close ();
+                }
+            }
+        }
+
+        private void Open () {
+            System.IO.Stream stream;
+            OpenFileDialog   dialog;
+
+            dialog = new OpenFileDialog();
+            dialog.Filter = "XML files (*.xml)|*.xml";
+            dialog.FilterIndex = 1;
+            dialog.RestoreDirectory = true;
+            
+            if (dialog.ShowDialog() == DialogResult.OK) {
+                if ((stream = dialog.OpenFile()) != null) {
+                    _scene.Load (stream);
+                    stream.Close ();
+                }
+            }
+        }
+
         private void CreateToolbarButtons () {
             _toolStrip.Items.AddRange (new ToolStripItem [] {
+                CreateButton ("Open",       (obj, e) => Open()),
+                CreateButton ("Save",       (obj, e) => Save()),
                 CreateButton ("Add",        (obj, e) => _state = new Adding (this)),
                 CreateButton ("Connect",    (obj, e) => _state = new Connecting (this)),
                 CreateButton ("Disconnect", (obj, e) => _state = new Disconnecting (this)),
@@ -91,7 +130,7 @@ namespace Windows {
         public void CreateVertex () {
             Point screen = System.Windows.Forms.Cursor.Position;
             Point client = _scene.PointToClient (screen);
-            var v = new Graphite.Core.Vertex (0, client);
+            var v = new Graphite.Core.Vertex (++_counter, client);
             v.VertexShape = _shapeMan.Shapes[_shapeCombo.SelectedIndex];
             _scene.AddVertex (v);
         }
