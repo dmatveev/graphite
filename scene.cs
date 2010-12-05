@@ -104,148 +104,72 @@ namespace RefactorMePlease {
 }
 
 namespace Widgets {
-    public class Scene: System.Windows.Forms.Control {
+    public class Scene: System.Windows.Forms.Control, Graphite.Core.IGraphView {
         protected List<Graphite.Scene.Elements.Vertex> _vertexVisuals;
         protected List<Graphite.Scene.Elements.Edge>   _edgeVisuals;
 
+        public void Reset () {
+            _vertexVisuals = new List<Graphite.Scene.Elements.Vertex> ();
+            _edgeVisuals   = new List<Graphite.Scene.Elements.Edge> ();
+        }
+
+        public void LayoutUpdated () {
+            Refresh ();
+        }
+
+        public void LayoutRebuilt () {
+            UpdateEdges ();
+            Refresh ();
+        }
+
+        public void VertexAdded (Graphite.Core.Vertex v) {
+            _vertexVisuals.Add (new Graphite.Scene.Elements.Vertex (v));
+            Refresh ();
+        }
+
+        public void VertexRemoved (Graphite.Core.Vertex v) {
+            var element = _vertexVisuals.First (x => x.AssignedTo == v);
+            _vertexVisuals.Remove (element);
+            Refresh ();
+        }
+
+        public void VertexConnected (Graphite.Core.Vertex a, Graphite.Core.Vertex b) {
+            UpdateEdges ();
+            Refresh ();
+        }
+
+        public void VertexDisconnected (Graphite.Core.Vertex a, Graphite.Core.Vertex b) {
+            UpdateEdges ();
+            Refresh ();
+        }
+
         public Scene () {
-            _vertexVisuals = new List<Graphite.Scene.Elements.Vertex>();
-            _edgeVisuals = new List<Graphite.Scene.Elements.Edge>();
+            Reset ();
             DoubleBuffered = true;
+            
+            // TODO: Refactor edge selection on click
+            Click += (obj, e) => TrySelectVertex (CurrentPoint ());
+            Click += (obj, e) => TrySelectEdge   (CurrentPoint ());
         }
 
-        // TODO: Refactoring
-        public void Save (System.IO.Stream stream) {
-            var settings = new System.Xml.XmlWriterSettings ();
+        public Point CurrentPoint () {
+            return PointToClient (System.Windows.Forms.Cursor.Position);
+        }
 
-            settings.Indent = true;
-            settings.OmitXmlDeclaration = true;
-            
-            var writer = System.Xml.XmlWriter.Create (stream, settings);
-            writer.WriteStartElement ("graph");
-
+        public Graphite.Core.Vertex SelectedVertex () {
             foreach (Graphite.Scene.Elements.Vertex v in _vertexVisuals)
-                v.AssignedTo.Save (writer);
+                if (v.Selected)
+                    return v.AssignedTo;
 
-            writer.WriteEndElement ();
-            writer.Close ();
+            return null;
         }
 
-        // TODO: Refactoring
-        private Point buildPositionFromXmlNode (System.Xml.XmlNode node) {
-            int x, y;
-            System.Xml.XmlElement element = (System.Xml.XmlElement) node;
+        public Graphite.Core.Edge SelectedEdge () {
+            foreach (Graphite.Scene.Elements.Edge e in _edgeVisuals)
+                if (e.Selected)
+                    return e.AssignedTo;
 
-            if (element.HasAttribute("x"))
-                x = System.Convert.ToInt32 (element.Attributes["x"].InnerText);
-            else
-                throw new System.Exception ("Position node does not have X attribute!");
-
-            if (element.HasAttribute("y"))
-                y = System.Convert.ToInt32 (element.Attributes["y"].InnerText);
-            else
-                throw new System.Exception ("Position node does not have Y attribute!");
-
-            return new Point (x, y);
-        }
-
-        // TODO: Refactoring
-        private Graphite.Core.Vertex buildVertexFromXmlNode (System.Xml.XmlElement vertexElt) {
-            int id;
-            string alias;
-
-            if (vertexElt.HasAttribute ("id"))
-                id = System.Convert.ToInt32 (vertexElt.Attributes["id"].InnerText);
-            else
-                throw new System.Exception ("Vertex node does not have ID attribute!");
-
-            if (vertexElt.HasAttribute ("shape"))
-                alias = vertexElt.Attributes ["shape"].InnerText;
-            else
-                throw new System.Exception ("Vertex node does not have Shape attribute!");
-            
-            System.Xml.XmlNode positionNode = vertexElt.GetElementsByTagName ("position")[0];
-            Graphite.Core.Vertex vertex =
-                new Graphite.Core.Vertex (id, buildPositionFromXmlNode (positionNode));
-            vertex.VertexShape = Graphite.Shapes.Manager.instance().FromAlias (alias);
-            return vertex;
-        }
-
-        private RefactorMePlease.EdgeSkeleton buildEdgeSkeletonFromXmlNode (System.Xml.XmlElement e) {
-            var result = new RefactorMePlease.EdgeSkeleton();
-
-            if (e.HasAttribute ("to"))
-                result.IdTo = System.Convert.ToInt32 (e.Attributes["to"].InnerText);
-            else
-                throw new System.Exception ("Edge node does not have To attribute!");
-
-            if (e.HasAttribute ("weight"))
-                result.Weight = System.Convert.ToInt32 (e.Attributes["weight"].InnerText);
-            else
-                throw new System.Exception ("Edge node does not have Weight attribute!");
-
-            return result;
-        }
-        
-
-        // TODO: Refactoring
-        public void Load (System.IO.Stream stream) {
-            var doc = new System.Xml.XmlDocument ();
-            var esk = new Dictionary<int, List<RefactorMePlease.EdgeSkeleton>>();
-            var lst = new List <Graphite.Core.Vertex> ();
-            doc.Load (stream);
-
-            var vertexNodes = doc.GetElementsByTagName ("vertex");
-            // first iteration: collect vertexes and edge data
-            foreach (System.Xml.XmlNode node in vertexNodes) {
-                System.Xml.XmlElement elt = (System.Xml.XmlElement) node;
-                var vertex        = buildVertexFromXmlNode (elt);
-                var edgeNodes     = elt.GetElementsByTagName ("edge");
-                var edgeSkeletons = new List <RefactorMePlease.EdgeSkeleton> ();
-
-                foreach (System.Xml.XmlNode edgeNode in edgeNodes)
-                    edgeSkeletons.Add (buildEdgeSkeletonFromXmlNode ((System.Xml.XmlElement)edgeNode));
-                
-                esk [vertex.Id] = edgeSkeletons;
-                lst.Add (vertex);
-            }
-
-            // second iteration: connect vertexes
-            _vertexVisuals = new List<Graphite.Scene.Elements.Vertex>();
-            foreach (Graphite.Core.Vertex vertex in lst) {
-                List <RefactorMePlease.EdgeSkeleton> skeletons = esk [vertex.Id];
-
-                foreach (RefactorMePlease.EdgeSkeleton skeleton in skeletons) {
-                    Graphite.Core.Vertex to = lst.First (x => x.Id == skeleton.IdTo);
-                    vertex.Connect (to, skeleton.Weight);
-                    to.Connect (vertex, skeleton.Weight);
-                }
-
-                _vertexVisuals.Add (new Graphite.Scene.Elements.Vertex (vertex));
-                UpdateEdges ();
-            }
-        }
-
-        // TODO: Refactoring
-        public Graphite.Core.Vertex SelectedVertex {
-            get {
-                foreach (Graphite.Scene.Elements.Vertex v in _vertexVisuals)
-                    if (v.Selected)
-                        return v.AssignedTo;
-
-                return null;
-            }
-        }
-
-        // TODO: Refactoring
-        public Graphite.Core.Edge SelectedEdge {
-            get {
-                foreach (Graphite.Scene.Elements.Edge e in _edgeVisuals)
-                    if (e.Selected)
-                        return e.AssignedTo;
-
-                return null;
-            }
+            return null;
         }
 
         protected override void OnPaint (PaintEventArgs e) {
@@ -257,23 +181,6 @@ namespace Widgets {
             foreach (Graphite.Scene.Elements.Vertex visual in _vertexVisuals)
                 visual.Paint (e.Graphics);
         } 
-
-        public void AddVertex (Graphite.Core.Vertex v) {
-            _vertexVisuals.Add (new Graphite.Scene.Elements.Vertex (v));
-            Refresh ();
-        }
-
-        public void DeleteVertex (Graphite.Core.Vertex v) {
-            foreach (Graphite.Core.Edge edge in v.Edges()) {
-                Graphite.Core.Vertex to = edge.To;
-                v.Disconnect (to);
-                to.Disconnect (v);
-            }
-            Graphite.Scene.Elements.Vertex el = _vertexVisuals.First (x => x.AssignedTo == v);
-            _vertexVisuals.Remove (el);
-            UpdateEdges ();
-            Refresh ();
-        }
 
         // TODO: Refactoring
         public void TrySelectVertex (Point pos) {
@@ -303,13 +210,6 @@ namespace Widgets {
             Refresh ();
         }
 
-        public void ConnectVertexes (Graphite.Core.Vertex a, Graphite.Core.Vertex b) {
-            a.Connect (b);
-            b.Connect (a);
-            UpdateEdges ();
-            Refresh ();
-        }
-
         protected void UpdateEdges () {
             _edgeVisuals = new List<Graphite.Scene.Elements.Edge>();
             
@@ -317,13 +217,6 @@ namespace Widgets {
                 foreach (Graphite.Core.Edge edge in ve.AssignedTo.Edges ())
                     if (!_edgeVisuals.Any (x => x.AssignedTo.Matches (edge)))
                         _edgeVisuals.Add (new Graphite.Scene.Elements.Edge (edge));
-        }
-
-        public void DisconnectVertexes (Graphite.Core.Vertex a, Graphite.Core.Vertex b) {
-            a.Disconnect (b);
-            b.Disconnect (a);
-            UpdateEdges ();
-            Refresh ();
         }
     }
 }

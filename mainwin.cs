@@ -6,20 +6,28 @@ using System.Windows.Forms;
 using Graphite.Editor.States;
 
 namespace Windows {
-    public class MainWindow: System.Windows.Forms.Form, Graphite.Core.IDocument {
+    public class MainWindow: System.Windows.Forms.Form, Graphite.Core.IUISet {
         protected ToolStrip               _toolStrip;
-        protected ToolStripComboBox       _shapeCombo;
+        protected Graphite.Widgets.ShapeSelector   _shapeCombo;
         protected Widgets.Scene           _scene;
         protected State                   _state;
         protected Graphite.Shapes.Manager _shapeMan;
-
+        protected Graphite.Core.Document  _doc;
         protected int                     _counter;
 
         public MainWindow () {
-            _state    = new Graphite.Editor.States.Adding (this);
+            _state    = new Graphite.Editor.States.Adding (_doc, this);
             _shapeMan = new Graphite.Shapes.Manager ();
+            _doc = new Graphite.Core.Document ();
             _counter  = 0;
             InitializeComponent();
+
+            _doc.LayoutUpdated      += _scene.LayoutUpdated;
+            _doc.LayoutRebuilt      += _scene.LayoutRebuilt;
+            _doc.VertexAdded        += _scene.VertexAdded;
+            _doc.VertexRemoved      += _scene.VertexRemoved;
+            _doc.VertexConnected    += _scene.VertexConnected;
+            _doc.VertexDisconnected += _scene.VertexDisconnected;
         }
 
         private void CreateScene () {
@@ -78,7 +86,7 @@ namespace Windows {
             if (dialog.ShowDialog() == DialogResult.OK) {
                 var stream = new System.IO.FileStream (dialog.FileName, System.IO.FileMode.Create);
                 if (stream != null) {
-                    _scene.Save (stream);
+                    _doc.Save (stream);
                     stream.Close ();
                 }
             }
@@ -95,7 +103,8 @@ namespace Windows {
             
             if (dialog.ShowDialog() == DialogResult.OK) {
                 if ((stream = dialog.OpenFile()) != null) {
-                    _scene.Load (stream);
+                    _scene.Reset ();
+                    _doc.Load (stream);
                     stream.Close ();
                 }
             }
@@ -105,73 +114,28 @@ namespace Windows {
             _toolStrip.Items.AddRange (new ToolStripItem [] {
                 CreateButton ("Open",       (obj, e) => Open()),
                 CreateButton ("Save",       (obj, e) => Save()),
-                CreateButton ("Add",        (obj, e) => _state = new Adding (this)),
-                CreateButton ("Connect",    (obj, e) => _state = new Connecting (this)),
-                CreateButton ("Disconnect", (obj, e) => _state = new Disconnecting (this)),
-                CreateButton ("Delete",     (obj, e) => _state = new Deleting (this)),
-                CreateButton ("Select",     (obj, e) => _state = new Idle (this))
+                CreateButton ("Add",        (obj, e) => _state = new Adding (_doc, this)),
+                CreateButton ("Connect",    (obj, e) => _state = new Connecting (_doc, this)),
+                CreateButton ("Disconnect", (obj, e) => _state = new Disconnecting (_doc, this)),
+                CreateButton ("Delete",     (obj, e) => _state = new Deleting (_doc, this)),
+                CreateButton ("Select",     (obj, e) => _state = new Idle (_doc, this))
             });
         }
 
         private void CreateShapeSelector () {
-            _shapeCombo = new ToolStripComboBox ();
-            _shapeCombo.DropDownStyle = ComboBoxStyle.DropDownList;
-
-            foreach (Graphite.Core.Shape sh in _shapeMan.Shapes)
-                _shapeCombo.Items.Add (sh.name ());
-
-            _shapeCombo.SelectedIndex = 0;
+            _shapeCombo = new Graphite.Widgets.ShapeSelector (_shapeMan);
 
             _toolStrip.Items.Add (new ToolStripSeparator ());
             _toolStrip.Items.Add (new ToolStripLabel ("Shape:"));
             _toolStrip.Items.Add (_shapeCombo);
         }
 
-        public void CreateVertex () {
-            Point screen = System.Windows.Forms.Cursor.Position;
-            Point client = _scene.PointToClient (screen);
-            var v = new Graphite.Core.Vertex (++_counter, client);
-            v.VertexShape = _shapeMan.Shapes[_shapeCombo.SelectedIndex];
-            _scene.AddVertex (v);
+        public Graphite.Core.IGraphView graphView () {
+            return _scene;
         }
 
-        public void DeleteVertex (Graphite.Core.Vertex v) {
-            _scene.DeleteVertex (v);
-        }
-
-        public void SelectVertex () {
-            Point screen = System.Windows.Forms.Cursor.Position;
-            Point client = _scene.PointToClient (screen);
-            _scene.TrySelectVertex (client);
-        }
-
-        public void SelectEdge () {
-            Point screen = System.Windows.Forms.Cursor.Position;
-            Point client = _scene.PointToClient (screen);
-            _scene.TrySelectEdge (client);
-        }
-
-        public Graphite.Core.Vertex SelectedVertex () {
-            return _scene.SelectedVertex;
-        }
-
-        public Graphite.Core.Edge SelectedEdge () {
-            return _scene.SelectedEdge;
-        }
-
-        public void ConnectVertexes (Graphite.Core.Vertex a, Graphite.Core.Vertex b) {
-            _scene.ConnectVertexes (a, b);
-        }
-
-        public void DisconnectVertexes (Graphite.Core.Vertex a, Graphite.Core.Vertex b) {
-            _scene.DisconnectVertexes (a, b);
-        }
-
-        public void MoveVertex (Graphite.Core.Vertex v) {
-            Point screen = System.Windows.Forms.Cursor.Position;
-            Point client = _scene.PointToClient (screen);
-            v.Position = client;
-            _scene.Refresh ();
+        public Graphite.Core.IShapeSelector shapeSelector () {
+            return _shapeCombo;
         }
     }
 }
