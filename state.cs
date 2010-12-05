@@ -5,7 +5,7 @@ using System.Windows.Forms;
 namespace Graphite.Editor.States {
     public class State {
         protected Graphite.Core.Document _document;
-        protected Graphite.Core.IUISet    _ui;
+        protected Graphite.Core.IUISet   _ui;
         
         public State (Graphite.Core.Document doc, Graphite.Core.IUISet ui) {
             _document = doc;

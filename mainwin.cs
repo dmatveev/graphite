@@ -16,9 +16,9 @@ namespace Windows {
         protected int                     _counter;
 
         public MainWindow () {
+            _doc      = new Graphite.Core.Document ();
             _state    = new Graphite.Editor.States.Adding (_doc, this);
             _shapeMan = new Graphite.Shapes.Manager ();
-            _doc = new Graphite.Core.Document ();
             _counter  = 0;
             InitializeComponent();
 

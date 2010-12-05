@@ -107,10 +107,11 @@ namespace Widgets {
     public class Scene: System.Windows.Forms.Control, Graphite.Core.IGraphView {
         protected List<Graphite.Scene.Elements.Vertex> _vertexVisuals;
         protected List<Graphite.Scene.Elements.Edge>   _edgeVisuals;
-
+        protected Brush _whiteBrush;
         public void Reset () {
             _vertexVisuals = new List<Graphite.Scene.Elements.Vertex> ();
             _edgeVisuals   = new List<Graphite.Scene.Elements.Edge> ();
+            _whiteBrush    = new SolidBrush (Color.White);
         }
 
         public void LayoutUpdated () {
@@ -174,6 +175,9 @@ namespace Widgets {
 
         protected override void OnPaint (PaintEventArgs e) {
             base.OnPaint(e);
+
+            var rect = new Rectangle (0, 0, ClientSize.Width, ClientSize.Height);
+            e.Graphics.FillRectangle (_whiteBrush, rect);
 
             foreach (Graphite.Scene.Elements.Edge edge in _edgeVisuals)
                 edge.Paint (e.Graphics);
