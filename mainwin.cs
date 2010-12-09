@@ -4,9 +4,35 @@ using System.Drawing;
 using System.ComponentModel;
 using System.Windows.Forms;
 using Graphite.Editor.States;
+using System.Collections.Generic;
+using Graphite.Utils;
+using System.Linq;
+
+namespace Graphite.Utils {
+    public class Command {
+        public string       Name  {get; protected set;}
+        public EventHandler Event {get; protected set;}
+
+        public Command (string name, EventHandler associatedEvent) {
+            Name  = name;
+            Event = associatedEvent;
+        }
+    }
+
+    public class CommandGroup {
+        public string        Name  {get; protected set;}
+        public List<Command> Items {get; protected set;}
+
+        public CommandGroup (string name) {
+            Name = name;
+            Items = new List<Command> ();
+        }
+    }
+}
 
 namespace Windows {
     public class MainWindow: System.Windows.Forms.Form, Graphite.Core.IUISet {
+        protected MenuStrip               _menuStrip;
         protected ToolStrip               _toolStrip;
         protected Graphite.Widgets.ShapeSelector   _shapeCombo;
         protected Widgets.Scene           _scene;
@@ -21,7 +47,10 @@ namespace Windows {
             _shapeMan = new Graphite.Shapes.Manager ();
             _counter  = 0;
             InitializeComponent();
+            ConnectModelWithView();
+        }
 
+        private void ConnectModelWithView () {
             _doc.LayoutUpdated      += _scene.LayoutUpdated;
             _doc.LayoutRebuilt      += _scene.LayoutRebuilt;
             _doc.VertexAdded        += _scene.VertexAdded;
@@ -33,15 +62,29 @@ namespace Windows {
         private void CreateScene () {
             _scene  = new Widgets.Scene();
 
-            _scene.Location = new System.Drawing.Point (0, 0);
+            var yoffset = _toolStrip.Size.Height + _menuStrip.Size.Height;
+            _scene.Location = new System.Drawing.Point (0, yoffset);
             _scene.Anchor   = (AnchorStyles.Left | AnchorStyles.Right |
                                AnchorStyles.Top  | AnchorStyles.Bottom);
-            _scene.Size     = ClientSize;
+            _scene.Size     = new Size (ClientSize.Width, ClientSize.Height - yoffset);
 
             _scene.Click     += (obj, e) => _state.ProcessClick();
             _scene.MouseMove += (obj, e) => _state.ProcessMouseMove();
             _scene.MouseDown += (obj, e) => _state.ProcessMouseDown();
             _scene.MouseUp   += (obj, e) => _state.ProcessMouseUp();
+        }
+
+        private void CreateMenu (CommandGroup [] groups) {
+            _menuStrip = new MenuStrip ();
+
+            foreach (CommandGroup cg in groups) {
+                var topItem = new ToolStripMenuItem (cg.Name);
+                topItem.DropDownItems.AddRange
+                    (cg.Items.Select (x => new ToolStripMenuItem (x.Name, null, x.Event)).ToArray());
+                
+                _menuStrip.Items.Add (topItem);
+            }
+            MainMenuStrip = _menuStrip;
         }
 
         private void InitializeComponent () {
@@ -50,27 +93,49 @@ namespace Windows {
 
             _toolStrip = new ToolStrip();
             _toolStrip.SuspendLayout ();
-            SuspendLayout();
-            
-            CreateToolbarButtons ();
+            SuspendLayout ();
+
+            var g = CreateCommandGroups ();
+            CreateToolbarButtons (g);
             CreateShapeSelector ();
+            CreateMenu (g);
             CreateScene ();
             
             Controls.Add (_toolStrip);
             Controls.Add (_scene);
+            Controls.Add (_menuStrip);
             
             _toolStrip.ResumeLayout (false);
             ResumeLayout (false);
             PerformLayout ();
         }
 
-        private ToolStripButton CreateButton (string label, EventHandler e) {
+        protected CommandGroup[] CreateCommandGroups () {
+            var fileOps = new CommandGroup ("File");
+            fileOps.Items.AddRange (new Command [] {
+                    new Command ("Open",    (obj, e) => Open()),
+                    new Command ("Save",    (obj, e) => Save()),
+                });
+            
+            var actions = new CommandGroup ("Actions");
+            actions.Items.AddRange (new Command [] {
+                    new Command ("Add",        (obj, e) => _state = new Adding (_doc, this)),
+                    new Command ("Delete",     (obj, e) => _state = new Deleting (_doc, this)),
+                    new Command ("Connect",    (obj, e) => _state = new Connecting (_doc, this)),
+                    new Command ("Disconnect", (obj, e) => _state = new Disconnecting (_doc, this)),
+                    new Command ("Select",     (obj, e) => _state = new Idle (_doc, this)),
+                });
+            
+            return new CommandGroup [] {fileOps, actions};
+        }
+
+        private ToolStripButton CreateButton (Command c) {
             var btn = new ToolStripButton ();
 
             btn.DisplayStyle =  ToolStripItemDisplayStyle.Text;
-			btn.Text         =  label;
+			btn.Text         =  c.Name;
 			btn.TextAlign    =  System.Drawing.ContentAlignment.MiddleRight;
-			btn.Click        += e;
+			btn.Click        += c.Event;
 
             return btn;
         }
@@ -110,22 +175,16 @@ namespace Windows {
             }
         }
 
-        private void CreateToolbarButtons () {
-            _toolStrip.Items.AddRange (new ToolStripItem [] {
-                CreateButton ("Open",       (obj, e) => Open()),
-                CreateButton ("Save",       (obj, e) => Save()),
-                CreateButton ("Add",        (obj, e) => _state = new Adding (_doc, this)),
-                CreateButton ("Connect",    (obj, e) => _state = new Connecting (_doc, this)),
-                CreateButton ("Disconnect", (obj, e) => _state = new Disconnecting (_doc, this)),
-                CreateButton ("Delete",     (obj, e) => _state = new Deleting (_doc, this)),
-                CreateButton ("Select",     (obj, e) => _state = new Idle (_doc, this))
-            });
+        private void CreateToolbarButtons (CommandGroup [] groups) {
+            foreach (CommandGroup cg in groups) {
+                _toolStrip.Items.AddRange (cg.Items.Select (x => CreateButton (x)).ToArray ());
+                _toolStrip.Items.Add (new ToolStripSeparator ());
+            }
         }
 
         private void CreateShapeSelector () {
             _shapeCombo = new Graphite.Widgets.ShapeSelector (_shapeMan);
-
-            _toolStrip.Items.Add (new ToolStripSeparator ());
+            
             _toolStrip.Items.Add (new ToolStripLabel ("Shape:"));
             _toolStrip.Items.Add (_shapeCombo);
         }
