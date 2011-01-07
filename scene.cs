@@ -49,6 +49,12 @@ namespace Graphite.Scene.Elements {
         protected Graphite.Core.Vertex _assignedVertex;
         public bool Selected { set; get; }
 
+        public bool Marked {
+            get {
+                return _assignedVertex.marked();
+            }
+        }
+
         public Vertex (Graphite.Core.Vertex vertex) {
             _assignedVertex = vertex;
         }
@@ -71,6 +77,12 @@ namespace Graphite.Scene.Elements {
     public class Edge {
         public bool Selected { set; get; }
 
+        public bool Marked {
+            get {
+                return _assignedEdge.marked();
+            }
+        }
+
         protected Graphite.Core.Edge _assignedEdge;
         
         public Edge (Graphite.Core.Edge edge) {
@@ -84,7 +96,7 @@ namespace Graphite.Scene.Elements {
         }
 
         public void Paint (Graphics g) {
-            Pen blackPen = new Pen (Color.Black, 1);
+            Pen blackPen = new Pen (Marked ?  Color.Red : Color.Black, 1);
             g.DrawLine (blackPen, _assignedEdge.From.Position, _assignedEdge.To.Position);
         }
 
@@ -104,7 +116,8 @@ namespace RefactorMePlease {
 }
 
 namespace Widgets {
-    public class Scene: System.Windows.Forms.Control, Graphite.Core.IGraphView {
+    public class Scene: System.Windows.Forms.Control, Graphite.Core.IGraphView,
+        Graphite.Abstract.IDisplay {
         protected List<Graphite.Scene.Elements.Vertex> _vertexVisuals;
         protected List<Graphite.Scene.Elements.Edge>   _edgeVisuals;
         protected Brush _whiteBrush;
@@ -221,6 +234,11 @@ namespace Widgets {
                 foreach (Graphite.Core.Edge edge in ve.AssignedTo.Edges ())
                     if (!_edgeVisuals.Any (x => x.AssignedTo.Matches (edge)))
                         _edgeVisuals.Add (new Graphite.Scene.Elements.Edge (edge));
+        }
+
+        // IDisplay implementation
+        public void update () {
+            Refresh ();
         }
     }
 }

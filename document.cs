@@ -13,7 +13,7 @@ namespace Graphite.Core {
     public delegate void VertexConnectedHandler    (Vertex a, Vertex b);
     public delegate void VertexDisconnectedHandler (Vertex a, Vertex b);
 
-    public class Document {
+    public class Document: Graphite.Abstract.IGraph {
         List<Graphite.Core.Vertex> _vertexes;
         int _counter;
 
@@ -183,6 +183,11 @@ namespace Graphite.Core {
 
             writer.WriteEndElement ();
             writer.Close ();
+        }
+
+        // IGraph interface implementation
+        public Graphite.Abstract.IVertex [] vertexes () {
+            return _vertexes.ToArray();
         }
     }
 }

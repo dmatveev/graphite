@@ -15,15 +15,18 @@ namespace Graphite.Core {
         public abstract string alias   ();
     }
 
-    public class Edge {
+    public class Edge: Graphite.Abstract.IEdge {
         public Vertex From {get; protected set;}
         public Vertex To {get; protected set;}
         public int Weight {get; protected set;}
+
+        protected bool _marked;
         
         public Edge (Vertex fromv, Vertex tov, int weight) {
             From = fromv;
             To = tov;
             Weight = weight;
+            _marked = false;
         }
 
         public bool Connected (Vertex v) {
@@ -44,19 +47,44 @@ namespace Graphite.Core {
             w.WriteAttributeString ("weight", Weight.ToString());
             w.WriteEndElement ();
         }
+
+        // IEdge interface implementation
+        public Graphite.Abstract.IVertex vfrom () {
+            return From;
+        }
+
+        public Graphite.Abstract.IVertex vto () {
+            return To;
+        }
+
+        public int weight () {
+            return Weight;
+        }
+
+        // IMarkable interface implementation
+        public void setMark (bool marked) {
+            _marked = marked;
+        }
+
+        public bool marked () {
+            return _marked;
+        }
     }
 
-    public class Vertex {
+    public class Vertex: Graphite.Abstract.IVertex {
         public int Id {get; protected set;}
         public Point Position;
         public Shape VertexShape;
 
         protected List<Edge> _edges;
+        protected bool _marked;
+        protected object _private;
 
         public Vertex (int id, Point pos) {
             Id = id;
             Position = pos;
             _edges = new List<Edge>();
+            _marked = false;
         }
 
         public void Connect (Vertex v, int weight = 0) {
@@ -103,6 +131,28 @@ namespace Graphite.Core {
                 each.Save (w);
             
             w.WriteEndElement ();
+        }
+
+        // IVertex interface implementation
+        public Graphite.Abstract.IEdge [] edges () {
+            return Edges();
+        }
+
+        public void setPrivateData (object data) {
+            _private = data;
+        }
+
+        public object getPrivateData () {
+            return _private;
+        }
+
+        // IMarkable interface implementation
+        public void setMark (bool marked) {
+            _marked = marked;
+        }
+
+        public bool marked () {
+            return _marked;
         }
     }
 }

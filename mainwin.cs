@@ -3,10 +3,12 @@ using System.Data;
 using System.Drawing;
 using System.ComponentModel;
 using System.Windows.Forms;
-using Graphite.Editor.States;
 using System.Collections.Generic;
-using Graphite.Utils;
 using System.Linq;
+using System.Reflection;
+
+using Graphite.Editor.States;
+using Graphite.Utils;
 
 namespace Graphite.Utils {
     public class Command {
@@ -39,13 +41,15 @@ namespace Windows {
         protected State                   _state;
         protected Graphite.Shapes.Manager _shapeMan;
         protected Graphite.Core.Document  _doc;
-        protected int                     _counter;
+        protected ToolStripMenuItem       _pluginMenu;
+
+        protected List<Graphite.Modules.IPlugin> _plugins;
 
         public MainWindow () {
             _doc      = new Graphite.Core.Document ();
             _state    = new Graphite.Editor.States.Adding (_doc, this);
             _shapeMan = new Graphite.Shapes.Manager ();
-            _counter  = 0;
+            _plugins  = new List<Graphite.Modules.IPlugin>();
             InitializeComponent();
             ConnectModelWithView();
         }
@@ -76,7 +80,7 @@ namespace Windows {
 
         private void CreateMenu (CommandGroup [] groups) {
             _menuStrip = new MenuStrip ();
-
+            _pluginMenu = new ToolStripMenuItem ("Plugins");
             foreach (CommandGroup cg in groups) {
                 var topItem = new ToolStripMenuItem (cg.Name);
                 topItem.DropDownItems.AddRange
@@ -84,6 +88,8 @@ namespace Windows {
                 
                 _menuStrip.Items.Add (topItem);
             }
+            _menuStrip.Items.Add (_pluginMenu);
+            CollectPlugins ();
             MainMenuStrip = _menuStrip;
         }
 
@@ -195,6 +201,36 @@ namespace Windows {
 
         public Graphite.Core.IShapeSelector shapeSelector () {
             return _shapeCombo;
+        }
+
+        private void CollectPlugins () {
+            _pluginMenu.DropDownItems.Clear ();
+            _plugins.Clear ();
+
+            var exePath = System.IO.Path.GetDirectoryName (Application.ExecutablePath);
+            var modPath = System.IO.Path.Combine (exePath, "plugins");
+            
+            if (!System.IO.Directory.Exists (modPath)) {
+                Console.WriteLine ("Could not access " + modPath);
+                return;
+            }
+
+            string[] files = System.IO.Directory.GetFiles (modPath, "*.dll");
+            foreach (string file in files) {
+                Assembly dynamicAssembly = Assembly.LoadFile (file);
+                Type[] types = dynamicAssembly.GetTypes ();
+
+                foreach (Type type in types) {
+                    if (type.GetInterface ("IPlugin") != null) {
+                        var obj = Activator.CreateInstance (type, null);
+                        var plg = obj as Graphite.Modules.IPlugin;
+                        var itm = _pluginMenu.DropDownItems.Add (plg.Name ());
+                        itm.Click += (o, e) => plg.Run (_doc, _scene);
+
+                        _plugins.Add (plg);
+                    }
+                }
+            }
         }
     }
 }

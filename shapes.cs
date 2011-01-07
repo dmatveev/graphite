@@ -21,7 +21,10 @@ namespace Graphite.Shapes {
         }
 
         public System.Drawing.Color Color (Graphite.Scene.Elements.Vertex v) {
-            return (v.Selected ? SystemColors.Highlight : System.Drawing.Color.Black);
+            if (v.Marked)
+                return System.Drawing.Color.Red;
+            else
+                return (v.Selected ? SystemColors.Highlight : System.Drawing.Color.Black);
         }
 
         protected void RenderId (Graphite.Scene.Elements.Vertex v, Graphics g) {
